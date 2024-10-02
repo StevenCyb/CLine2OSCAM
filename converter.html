@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>C-Line2OSCAM</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            display: flex;
+            justify-content: center;
+            height: 100vh;
+            margin: 20px;
+        }
+
+        .row {
+            display: flex;
+            flex-direction: row;
+            justify-content: space-between;
+            margin-top: 20px;
+            width: 800px;
+            max-width: calc(100vw - 20px);
+        }
+
+        .textarea-container {
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            flex: 1;
+            margin: 0 10px;
+        }
+
+        textarea {
+            flex: 1;
+            resize: none;
+            height: 400px;
+            font-size: 14px;
+            box-sizing: border-box;
+        }
+
+        #output {
+            background-color: #f0f0f0;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        td {
+            padding: 8px;
+        }
+
+        label {
+            display: inline-block;
+            width: 150px;
+        }
+
+        #save {
+            position: absolute;
+            bottom: 10px;
+            right: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div>
+        <div>
+            <table>
+                <tr>
+                    <td><label for="protocol">Protocol:</label></td>
+                    <td><input type="text" id="protocol" value="cccam" onchange="update()"></td>
+                </tr>
+                <tr>
+                    <td><label for="inactivitytimeout">Inactivity Timeout:</label></td>
+                    <td><input type="number" id="inactivitytimeout" value="30" onchange="update()"></td>
+                </tr>
+                <tr>
+                    <td><label for="group">Group:</label></td>
+                    <td><input type="number" id="group" value="1" onchange="update()"></td>
+                </tr>
+                <tr>
+                    <td><label for="cccversion">CCC Version:</label></td>
+                    <td><input type="text" id="cccversion" value="2.0.11" onchange="update()"></td>
+                </tr>
+                <tr>
+                    <td><label for="ccckeepalive">CCC Keep Alive:</label></td>
+                    <td><input type="number" id="ccckeepalive" value="1" onchange="update()"></td>
+                </tr>
+                <tr>
+                    <td><label for="disablecrccws">Disable CRC CWS:</label></td>
+                    <td><input type="number" id="disablecrccws" value="1" onchange="update()"></td>
+                </tr>
+                <tr>
+                    <td><label for="keepalive">Keep Alive:</label></td>
+                    <td><input type="number" id="keepalive" value="1" onchange="update()"></td>
+                </tr>
+                <tr>
+                    <td><label for="connectoninit">Connect on Init:</label></td>
+                    <td><input type="number" id="connectoninit" value="1" onchange="update()"></td>
+                </tr>
+                <tr>
+                    <td><label for="reconnecttimeout">Reconnect Timeout:</label></td>
+                    <td><input type="number" id="reconnecttimeout" value="10" onchange="update()"></td>
+                </tr>
+            </table>
+        </div>
+        <div class="row">
+            <textarea id="input" placeholder="C: a1.domain.xyz 12300 username password
+C: a2.domain.xyz 12301 username password
+C: a3.domain.xyz 12302 username password
+C: a4.domain.xyz 12303 username password
+C: a5.domain.xyz 12304 username password
+C: a6.domain.xyz 12305 username password
+C: a7.domain.xyz 12306 username password
+C: a8.domain.xyz 12307 username password" oninput="convert()"></textarea>
+            <div class="textarea-container">
+                <textarea id="output" readonly placeholder="Generated output will appear here..."></textarea>
+                <button id="save" onclick="save()">Save</button>
+            </div>
+        </div>
+    </div>
+    <script>
+        const cLineInput = document.getElementById('input');
+        const oscamOutput = document.getElementById('output');
+        const protocol = document.getElementById('protocol');
+        const inactivitytimeout = document.getElementById('inactivitytimeout');
+        const group = document.getElementById('group');
+        const cccversion = document.getElementById('cccversion');
+        const ccckeepalive = document.getElementById('ccckeepalive');
+        const disablecrccws = document.getElementById('disablecrccws');
+        const keepalive = document.getElementById('keepalive');
+        const connectoninit = document.getElementById('connectoninit');
+        const reconnecttimeout = document.getElementById('reconnecttimeout');
+
+        function convert() {
+            const input = cLineInput.value;
+            const lines = input.trim().split('\n');
+            let output = `# Generated at ${new Date().toISOString().slice(0, 19).replace('T', ' ')}\n`;
+
+            lines.forEach(line => {
+                if (line.trim() === "") return;
+                const parts = line.split(" ");
+                if (parts.length !== 5) return;
+
+                const [_, url, port, user, password] = parts;
+                output += `[reader]
+label             = ${url}
+protocol          = ${protocol.value} 
+device            = ${url},${port}
+user              = ${user} 
+password          = ${password} 
+inactivitytimeout = ${inactivitytimeout.value}
+group             = ${group.value}
+cccversion        = ${cccversion.value}
+ccckeepalive      = ${ccckeepalive.value}
+disablecrccws     = ${disablecrccws.value}
+keepalive         = ${keepalive.value}
+connectoninit     = ${connectoninit.value}
+reconnecttimeout  = ${reconnecttimeout.value}\n\n`;
+            });
+
+            oscamOutput.value = output;
+        }
+
+        function update() {
+            if (oscamOutput.value.trim() !== "") {
+                convert();
+            }
+        }
+
+        function save() {
+            convert();
+            const blob = new Blob([oscamOutput.value], { type: 'text/plain' });
+            const anchor = document.createElement('a');
+            anchor.download = 'oscam.server';
+            anchor.href = window.URL.createObjectURL(blob);
+            anchor.target = '_blank';
+            anchor.style.display = 'none';
+            document.body.appendChild(anchor);
+            anchor.click();
+            document.body.removeChild(anchor);
+        };
+    </script>
+</body>
+</html>
