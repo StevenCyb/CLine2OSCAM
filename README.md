@@ -26,7 +26,7 @@ C: a1.domain.xyz 12300 username password
 C: a2.domain.xyz 12301 username password
 ```
 Will generate this output:
-```toml
+```
 # Generated at 2024-10-02 07:23:35
 [reader]
 label             = a1.domain.xyz
